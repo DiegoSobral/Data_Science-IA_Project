@@ -1,0 +1,108 @@
+#Limpeza das outras companhias p/ manter a "WN"
+
+# Filtrar o DataFrame para manter apenas os dados da companhia "WN"
+df_wn = removeDuplicated[removeDuplicated['Airline'] == 'WN']
+
+# Contar a quantidade de linhas no DataFrame filtrado
+quantidade_de_linhas = len(df_wn)
+
+print(f'Quantidade de linhas após filtrar a companhia WN": {quantidade_de_linhas}')
+
+print(df_wn)
+
+##Teste dos dados
+
+No contexto de métricas de classificação, `precision`, `recall`, `f1-score` e `support` são medidas que ajudam a avaliar o desempenho de um modelo de classificação, como aqueles usados em aprendizado de máquina. Aqui está o significado de cada uma dessas métricas:
+
+1. **Precision (Precisão)**:
+   - A precisão é a proporção de instâncias classificadas como positivas corretamente em relação ao total de instâncias classificadas como positivas. É uma medida da precisão do modelo ao prever a classe positiva.
+   - Precisão = (Verdadeiros Positivos) / (Verdadeiros Positivos + Falsos Positivos)
+   - Essa métrica informa o quão confiável é o modelo ao rotular instâncias como pertencentes à classe positiva. Uma alta precisão significa que poucas instâncias negativas são classificadas como positivas.
+
+2. **Recall (Revocação ou Sensibilidade)**:
+   - O recall é a proporção de instâncias classificadas como positivas corretamente em relação ao total de instâncias da classe positiva no conjunto de dados. É uma medida de quantos casos positivos o modelo é capaz de identificar.
+   - Recall = (Verdadeiros Positivos) / (Verdadeiros Positivos + Falsos Negativos)
+   - O recall informa o quão bem o modelo é capaz de capturar todas as instâncias da classe positiva. Uma alta taxa de recall indica que o modelo identifica a maioria dos casos positivos.
+
+3. **F1-Score**:
+   - O F1-Score é a média harmônica ponderada da precisão e do recall. Ele fornece uma única métrica que leva em consideração tanto a capacidade do modelo de classificar corretamente exemplos positivos quanto sua capacidade de identificar todos os exemplos positivos.
+   - F1-Score = 2 * (Precisão * Recall) / (Precisão + Recall)
+   - O F1-Score é especialmente útil quando há um desequilíbrio entre as classes (um grande número de instâncias negativas e um pequeno número de instâncias positivas).
+
+4. **Support**:
+   - A contagem de suporte é o número de instâncias reais da classe em questão no conjunto de dados. Ela fornece informações sobre o tamanho da classe.
+   - Support é o número total de instâncias da classe real que foram usadas na avaliação do modelo.
+
+Essas métricas são frequentemente usadas em conjunto para avaliar o desempenho de um modelo de classificação. Enquanto a precisão se concentra em minimizar os falsos positivos, o recall se concentra em minimizar os falsos negativos. O F1-Score combina essas duas medidas em uma única métrica que equilibra precisão e recall. A contagem de suporte ajuda a entender a distribuição das classes no conjunto de dados. Dependendo do problema, diferentes métricas podem ser mais importantes.
+
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score
+import joblib
+
+class YourModel:
+    def __init__(self, hidden_layer_sizes=(500, 500), max_iter=5000, random_state=5):
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.max_iter = max_iter
+        self.random_state = random_state
+        self.model = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, max_iter=max_iter, random_state=random_state)
+
+    def train_incremental(self, df, num_iterations=10000, percent_new_data=0.05):
+        best_accuracy = 0
+        best_iteration = 0
+        accuracy = 0
+        label_encoder_airportfrom = LabelEncoder()
+        df['AirportFrom_encoded'] = label_encoder_airportfrom.fit_transform(df['AirportFrom'])
+
+        X = df[['Time', 'Length', 'AirportFrom_encoded']]
+        y = df['Delay']
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=5)
+
+        if (accuracy < 80):
+          for iteration in range(num_iterations):
+            try:
+                self.model = joblib.load('modelo_treinado_best.pkl')
+            except FileNotFoundError:
+                pass
+
+            novos_dados = df.sample(frac=percent_new_data, random_state=iteration)
+            novas_etiquetas = novos_dados[['Time', 'Length', 'AirportFrom_encoded']], novos_dados['Delay']
+
+            X_train = pd.concat([X_train, novas_etiquetas[0]])
+            y_train = pd.concat([y_train, novas_etiquetas[1]])
+
+            self.model.partial_fit(X_train, y_train, classes=[0, 1])
+
+            y_pred = self.model.predict(X_test)
+
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f'Iteração {iteration + 1} - Acurácia: {accuracy * 100:.3f}%')
+
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_iteration = iteration
+                joblib.dump(self.model, 'modelo_treinado_best.pkl')
+                print("Modelo salvo")
+
+        print(f'Melhor modelo encontrado na iteração {best_iteration + 1} com acurácia de {best_accuracy * 100:.3f}%')
+
+# Uso da classe YourModel
+your_model = YourModel()
+your_model.train_incremental(df_wn)
+
+##Estudo de dados da companhia 'WN'
+
+#Scatter Plot
+sns.pairplot(df_wn)
+plt.show()
+
+#Correlação Heatmap
+corr=df_wn.corr()
+
+plt.figure(figsize=(12, 8))
+sns.heatmap(df_wn.corr(), annot=True, linewidth=1)
+plt.title('Heatmap de Correlação entre Features')
+plt.show()
