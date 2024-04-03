@@ -1,0 +1,416 @@
+# Descrição Inicial dos Dados
+
+#Importando Bibliotecas
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import confusion_matrix
+import keras
+import os
+
+#Importando Database
+for dirname, _, filenames in os.walk("/content/drive/MyDrive/df_airline.csv"):
+  for filename in filenames:
+      print(os.path.join(dirname, filename))
+
+#Montando Google drive na máquina Virtual
+from google.colab import drive
+drive.mount('/content/drive')
+
+#Criando DataFrame - Usando arquivo direto do google drive.
+df = pd.read_csv("/content/drive/MyDrive/Airlines.csv")
+df.drop('id', axis=1, inplace=True)
+df
+
+#Mostrando Número de Linhas e Colunas
+num_linhas, num_colunas = df.shape
+print(f'O DataFrame possui {num_colunas} colunas e {num_linhas} linhas')
+
+#Mostrando tipos de dados
+df.dtypes
+
+## Tratamento de Dados Ausentes/Ruidosos
+
+#Mostrando Valores ausentes por colunas
+df.isnull().sum()
+
+#Encontrando Valores Duplicados
+duplicados = df.duplicated()
+print([duplicados])
+
+#Removendo Valores duplicados
+removeDuplicated = df.drop_duplicates()
+print(removeDuplicated)
+print("")
+num_linhas, num_colunas = removeDuplicated.shape
+print(f'O DataFrame possui {num_colunas} colunas e {num_linhas} linhas')
+
+#Gerando CSV com dados pré-processados
+removeDuplicated.to_csv("removeDuplicated.csv")
+
+len(removeDuplicated['Airline'].unique())
+
+len(removeDuplicated['Flight'].unique())
+
+len(removeDuplicated['AirportFrom'].unique())
+
+len(removeDuplicated['AirportTo'].unique())
+
+len(removeDuplicated['DayOfWeek'].unique())
+
+len(removeDuplicated['Time'].unique())
+
+len(removeDuplicated['Length'].unique())
+
+len(removeDuplicated['Delay'].value_counts())
+
+## Estatísticas Descritivas Básicas
+
+#Cálculo de Estatísticas Descritivas
+removeDuplicated.describe()
+
+#*   **Airline:**  É uma variável categórica nominal, representando diferentes companhias aéreas. Cada companhia aérea é uma categoria distinta e não existe uma ordem específica entre elas.
+
+#*   **AirportFrom:** É uma variável categórica nominal, representando diferentes aeroportos de partida. Cada aeroporto é uma categoria distinta, e não há uma ordem específica entre eles.
+
+#*   **AirportTo:** Também é uma variável categórica nominal, representando diferentes aeroportos de chegada. Cada aeroporto é uma categoria distinta, e não há uma ordem específica entre eles.
+
+#*   **Day Of Week:** É uma variável categórica ordinal, representando os dias da semana (por exemplo, segunda-feira, terça-feira, etc.). Embora os dias da semana tenham uma ordem específica, eles ainda são considerados categóricos porque representam categorias distintas e discretas.
+
+#*   As variáveis restantes, **Flight**, **Time**, **Length** e **Delay**, são variáveis numéricas, pois representam valores numéricos e não categorias distintas.
+
+#Frequência e Moda Airline
+frequenciaAirline = removeDuplicated['Airline'].value_counts()
+modaAirline = removeDuplicated['Airline'].mode()
+print(frequenciaAirline)
+print(modaAirline)
+
+#Frequência e Moda AirportFrom
+frequenciaAirportFrom = removeDuplicated['AirportFrom'].value_counts()
+modaAirportFrom = removeDuplicated['AirportFrom'].mode()
+print(frequenciaAirportFrom)
+print(modaAirportFrom)
+
+#Frequencia e Moda AirportTo
+frequenciaAirportTo = removeDuplicated['AirportTo'].value_counts()
+modaAirportTo = removeDuplicated['AirportTo'].mode()
+print(frequenciaAirportTo)
+print(modaAirportTo)
+
+#Frequencia e Moda DayOfWeek
+frequenciaDayOfWeek = removeDuplicated['DayOfWeek'].value_counts()
+modaDayOfWeek = removeDuplicated['DayOfWeek'].mode()
+print(frequenciaDayOfWeek)
+print(modaDayOfWeek)
+
+## Visualização de Dados
+
+##Representação dos dados graficamente
+#Representando Airline
+plt.figure(figsize=(30,30))
+plt.subplot(4,4,1)
+sns.countplot(x = 'Airline', palette='Set1', data = removeDuplicated, order = removeDuplicated['Airline'].value_counts().index)
+
+#Representando daysOfWeek
+plt.subplot(4,3,2)
+sns.countplot(x = 'DayOfWeek', palette='Set2', data = removeDuplicated)
+
+#Representando Delay
+plt.subplot(4,3,3)
+sns.countplot(x = 'Delay', palette='Set3', data = removeDuplicated)
+
+removeDuplicated['Airline'].value_counts()
+
+removeDuplicated['DayOfWeek'].value_counts()
+
+removeDuplicated['Delay'].value_counts()
+
+#Representando AirportFrom
+import plotly.graph_objects as go
+import plotly.express as px
+import plotly.subplots as sp
+Airportto=removeDuplicated[['AirportFrom']].value_counts().reset_index()
+Airportto.columns=['AirportFrom', 'Count']
+Airportto = Airportto.sort_values('Count', ascending = True)
+
+top_values = Airportto.tail(10)
+bottom_values = Airportto.head(10)
+fig_top = px.bar(top_values, x='AirportFrom', y='Count', title='10 Maiores Valores')
+fig_bottom = px.bar(bottom_values, x='AirportFrom', y='Count', title='10 Menores Valores')
+fig = sp.make_subplots(rows=1, cols=2, subplot_titles=('10 Menores Valores', '10 Maiores Valores'))
+fig.add_trace(fig_bottom.data[0], row=1, col=1)
+fig.add_trace(fig_top.data[0], row=1, col=2)
+fig.update_layout(showlegend=False)
+fig.show()
+
+removeDuplicated['AirportFrom'].value_counts()
+
+#Representando AirportTo
+Airportto=removeDuplicated[['AirportTo']].value_counts().reset_index()
+Airportto.columns=['AirportTo', 'Count']
+Airportto = Airportto.sort_values('Count', ascending = True)
+
+top_values = Airportto.tail(10)
+bottom_values = Airportto.head(10)
+fig_top = px.bar(top_values, x='AirportTo', y='Count', title='10 Maiores Valores')
+fig_bottom = px.bar(bottom_values, x='AirportTo', y='Count', title='10 Menores Valores')
+fig = sp.make_subplots(rows=1, cols=2, subplot_titles=('10 Menores Valores', '10 Maiores Valores'))
+fig.add_trace(fig_bottom.data[0], row=1, col=1)
+fig.add_trace(fig_top.data[0], row=1, col=2)
+fig.update_layout(showlegend=False)
+fig.show()
+
+removeDuplicated['AirportTo'].value_counts()
+
+#Histogramas
+colunas = removeDuplicated.columns
+for coluna in colunas:
+    plt.hist(removeDuplicated[coluna], bins=10, color='skyblue', edgecolor='black')
+    plt.xlabel('Valores')
+    plt.ylabel('Frequência')
+    plt.title(f'Histograma da Coluna: {coluna}')
+    plt.show()
+
+#Scatter Plot
+sns.pairplot(removeDuplicated)
+plt.show()
+
+#BoxPlots
+plt.figure(figsize=(12, 8))
+sns.boxplot(data=removeDuplicated, orient='h')
+plt.xlabel('Valores')
+plt.title('Boxplots para Todas as Colunas Numéricas')
+plt.show()
+
+## Análise de Distribuição de Variáveis
+
+sns.countplot(data=removeDuplicated, x='Airline', color='blue')
+plt.title('Distribuição de Variável Airline')
+plt.show()
+
+plt.figure(figsize=(200, 10))
+sns.countplot(data=removeDuplicated, x='Flight', color='blue')
+plt.title('Distribuição de Variável Fligth')
+plt.yscale('log')
+plt.show()
+
+plt.figure(figsize=(40, 10))
+sns.countplot(data=removeDuplicated, x='AirportFrom', color='blue')
+plt.title('Distribuição de Variável AirportFrom')
+plt.yscale('log')
+plt.show()
+
+plt.figure(figsize=(100, 30))
+sns.countplot(data=removeDuplicated, x='AirportTo',color='blue')
+plt.title('Distribuição de Variável AirportTo')
+plt.yscale('log')
+plt.show()
+
+sns.countplot(data=removeDuplicated, x='DayOfWeek', color='blue')
+plt.title('Distribuição de Variável DayOfWeek')
+plt.show()
+
+plt.figure(figsize=(100, 30))
+sns.countplot(data=removeDuplicated, x='Time', color='blue')
+plt.title('Distribuição de Variável Time')
+plt.yscale('log')
+plt.show()
+
+plt.figure(figsize=(100, 30))
+sns.countplot(data=removeDuplicated, x='Length', color='blue')
+plt.title('Distribuição de Variável Length')
+plt.yscale('log')
+plt.show()
+
+sns.countplot(data=removeDuplicated, x='Delay')
+plt.title('Distribuição de Variável Delay')
+plt.show()
+
+## Análise de Correlação
+
+# Correlação Delay, Airline e DayOfWeek
+tabela_dinamica = removeDuplicated.pivot_table(values='Delay', index='Airline', columns='DayOfWeek', aggfunc='mean')
+
+companhias_aereas = tabela_dinamica.index
+
+for companhia in companhias_aereas:
+    plt.figure(figsize=(8, 6))
+    atrasos_por_dia = tabela_dinamica.loc[companhia]
+    atrasos_por_dia.plot(kind='bar', color='red')
+    plt.title(f'Média de Atrasos para {companhia} por Dia da Semana')
+    plt.xlabel('Dia da Semana')
+    plt.ylabel('Média de Incidência de Atrasos')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# Correlação Delay, AirportFrom e DayOfWeek
+tabela_dinamica = removeDuplicated.pivot_table(values='Delay', index='AirportFrom', columns='DayOfWeek', aggfunc='mean')
+
+cidades_saida = tabela_dinamica.index
+
+for cidade in cidades_saida:
+    plt.figure(figsize=(8, 6))
+    atrasos_por_dia = tabela_dinamica.loc[cidade]
+    atrasos_por_dia.plot(kind='bar', color='purple')
+    plt.title(f'Média de Atrasos para Voos com Saída de {cidade} por Dia da Semana')
+    plt.xlabel('Dia da Semana')
+    plt.ylabel('Média de Atrasos (minutos)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+#Correlação Delay, Flight e DayOfWeek
+
+# tabela_dinamica = removeDuplicated.pivot_table(values='Delay', index='Flight', columns='DayOfWeek', aggfunc='mean')
+
+# modelos = tabela_dinamica.index
+
+# for modelo in modelos:
+# plt.figure(figsize=(10, 8))
+# atrasos_por_dia = tabela_dinamica.loc[modelo]
+# atrasos_por_dia.plot(kind='bar', color='Grey')
+# plt.title(f'Média de Atrasos para o Flight {modelo} por Dia da Semana')
+# plt.xlabel('Dia da Semana')
+# plt.ylabel('Média de Atrasos (minutos)')
+# plt.xticks(rotation=45)
+# plt.tight_layout()
+# plt.show()
+
+Agrupando os modelos de 1000 em 1000 e os quantificando temos:
+
+removeDuplicated['FlightGroup'] = (removeDuplicated['Flight'].astype(int) - 1) // 1000
+tabela_dinamica = removeDuplicated.pivot_table(values='Delay', index='FlightGroup', columns='DayOfWeek', aggfunc='mean')
+quantidade_voos_por_grupo = removeDuplicated.groupby('FlightGroup').size()
+
+for grupo in tabela_dinamica.index:
+    plt.figure(figsize=(10, 6))
+    atrasos_por_dia = tabela_dinamica.loc[grupo]
+    atrasos_por_dia.plot(kind='bar', color='Grey')
+    plt.title(f'Média de Atrasos para Grupo {grupo*1000+1} - {min((grupo+1)*1000, len(df))} de Voos por Dia da Semana')
+    plt.xlabel('Dia da Semana')
+    plt.ylabel('Média de Atrasos (minutos)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+print('Quantidade de voos por grupo:')
+print(quantidade_voos_por_grupo)
+
+## Exploração de Relação e Tendências
+
+#Correlação Heatmap
+corr=removeDuplicated.corr()
+
+plt.figure(figsize=(12, 8))
+sns.heatmap(removeDuplicated.corr(), annot=True, linewidth=1)
+plt.title('Heatmap de Correlação entre Features')
+plt.show()
+
+#Relação Airline e Delay
+plt.figure(figsize = (18,20))
+
+plt.subplot(2,1,1)
+sns.countplot(x = 'Airline', hue= 'Delay', palette='Set2', data = removeDuplicated)
+
+#Relação DayOfWeek e Delay
+plt.subplot(2,1,2)
+sns.countplot(x = 'DayOfWeek', hue= 'Delay', palette='Set2', data = removeDuplicated)
+
+sns.scatterplot(data=removeDuplicated, x='Airline', y='Delay')
+plt.xlabel('Airline')
+plt.ylabel('Delay')
+plt.title('Scatter Plot entre Delay e Airline')
+plt.xticks(rotation=45)
+plt.show()
+
+#Relação Delay e Time
+sns.catplot(x = "Delay", y = "Time", palette = "Set2", data = removeDuplicated)
+
+#Relação Delay e Length
+sns.catplot(x = "Delay", y = "Length", palette = "Set2", data = removeDuplicated)
+
+#Relação Time e Length
+plt.figure(figsize = (15,20))
+sns.set(color_codes = True)
+plt.subplot(2,2,1)
+sns.distplot(removeDuplicated.Time, kde = True)
+plt.subplot(2,2,2)
+sns.distplot(removeDuplicated.Length, kde = True)
+
+## Análise de Outliers
+
+sns.boxplot(data=removeDuplicated, y='Flight')
+plt.title('Boxplot para Identificar Outliers Flight')
+plt.show()
+
+sns.boxplot(data=removeDuplicated, y='DayOfWeek')
+plt.title('Boxplot para Identificar Outliers DayOfWeek')
+plt.show()
+
+
+sns.boxplot(data=removeDuplicated, y='Time')
+plt.title('Boxplot para Identificar Outliers Time')
+plt.show()
+
+sns.boxplot(data=removeDuplicated, y='Length')
+plt.title('Boxplot para Identificar Outliers Length')
+plt.show()
+
+#Tratamento de Outliers em Length - Encontrando Mínimo e Máxino
+Q1 = removeDuplicated['Length'].quantile(0.25)
+Q3 = removeDuplicated['Length'].quantile(0.75)
+IQR = Q3 - Q1
+
+limite_inferior = Q1 - 1.5 * IQR
+limite_superior = Q3 + 1.5 * IQR
+
+print(f'Limite Inferior: {limite_inferior}')
+print(f'Limite Superior: {limite_superior}')
+
+#Substituindo Outliers por Mediana
+removeDuplicated['Length'] = removeDuplicated['Length'].apply(lambda x: removeDuplicated['Length'].mean() if x < limite_inferior or x > limite_superior else x)
+
+#Boxplot Length pós tratamento
+sns.boxplot(data=removeDuplicated, y='Length')
+plt.title('Boxplot para Identificar Outliers Length')
+plt.show()
+
+sns.boxplot(data=removeDuplicated, y='Delay')
+plt.title('Boxplot para Identificar Outliers Delay')
+plt.show()
+
+from sklearn.preprocessing import LabelEncoder
+
+le = LabelEncoder()
+df['Airline_encoded'] = le.fit_transform(df['Airline'])
+df['AirportFrom_encoded'] = le.fit_transform(df['AirportFrom'])
+
+## Graficos que cruzam Exit Hour com o Atraso
+
+#Cruzamento geral
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+tabela_dinamica = df.pivot_table(values='Delay', index='Time', columns='DayOfWeek', aggfunc='mean')
+
+horários_de_saida = tabela_dinamica.index
+
+for horário in horários_de_saida:
+    plt.figure(figsize=(8, 6))
+    atrasos_por_dia = tabela_dinamica.loc[horário]
+    atrasos_por_dia.plot(kind='bar', color='purple')
+    plt.title(f'Média de Atrasos para Voos com Saída no Horário {horário} por Dia da Semana')
+    plt.xlabel('Dia da Semana')
+    plt.ylabel('Média de Atrasos (minutos)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
